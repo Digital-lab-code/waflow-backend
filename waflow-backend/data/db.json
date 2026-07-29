@@ -1,0 +1,18 @@
+{
+  "contacts": [],
+  "scheduled": [],
+  "campaigns": [],
+  "logs": [],
+  "incoming": [],
+  "conversations": {},
+  "accounts": {
+    "demo_account": {
+      "id": "demo_account",
+      "plan": "pro",
+      "status": "active",
+      "stripeCustomerId": null,
+      "periodEnd": null,
+      "updatedAt": "2026-07-29T14:17:02.245Z"
+    }
+  }
+}

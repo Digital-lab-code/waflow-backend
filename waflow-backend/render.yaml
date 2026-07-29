@@ -1,0 +1,21 @@
+# Configuration Render (Blueprint) — WaFlow Backend
+# Docs : https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: waflow-backend
+    runtime: node
+    plan: free
+    region: frankfurt          # UE → plus proche du Maroc
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health   # Render vérifie que l'API répond 200
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 20.11.0
+      - key: DRY_RUN
+        value: "true"              # WhatsApp simulé (pas besoin de compte Meta)
+      - key: DEFAULT_COUNTRY_CODE
+        value: "212"
+      # Optionnel (à ajouter plus tard dans le tableau Render) :
+      # WHATSAPP_TOKEN, PHONE_NUMBER_ID, AI_API_KEY, STRIPE_SECRET_KEY…

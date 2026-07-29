@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WaFlow — Maquettes UI/UX</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+  body { background: #EEF2F7; padding: 40px 20px; color: #0F172A; }
+
+  .board-header { max-width: 1400px; margin: 0 auto 10px; }
+  .board-header h1 { font-size: 34px; font-weight: 800; letter-spacing: -0.5px; }
+  .board-header h1 span { color: #10B981; }
+  .board-header p { color: #64748B; margin-top: 8px; font-size: 15px; }
+
+  .flow-section { max-width: 1400px; margin: 50px auto 0; }
+  .flow-title { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .flow-title .num { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, #10B981, #059669); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; }
+  .flow-title h2 { font-size: 22px; font-weight: 750; }
+  .flow-title small { display: block; color: #94A3B8; font-weight: 500; font-size: 13px; }
+
+  .screens { display: flex; flex-wrap: wrap; gap: 36px; justify-content: flex-start; }
+  .screen-wrap { display: flex; flex-direction: column; align-items: center; }
+  .screen-label { margin-top: 16px; font-weight: 700; font-size: 14px; color: #334155; text-align: center; }
+  .screen-sub { font-size: 12px; color: #94A3B8; text-align: center; margin-top: 2px; }
+
+  /* PHONE FRAME */
+  .phone {
+    width: 290px; height: 600px; background: #000; border-radius: 44px; padding: 11px;
+    box-shadow: 0 25px 50px -12px rgba(15,23,42,0.35), 0 0 0 2px #1E293B;
+    position: relative;
+  }
+  .phone-screen { width: 100%; height: 100%; border-radius: 34px; overflow: hidden; background: #fff; position: relative; }
+  .notch { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: 95px; height: 26px; background: #000; border-radius: 16px; z-index: 50; }
+
+  /* STATUS BAR */
+  .statusbar { display: flex; justify-content: space-between; align-items: center; padding: 16px 26px 6px; font-size: 13px; font-weight: 700; }
+  .statusbar .icons { display: flex; gap: 5px; align-items: center; font-size: 11px; }
+  .bat { width: 22px; height: 11px; border: 1.5px solid #0F172A; border-radius: 3px; position: relative; padding: 1px; }
+  .bat::after { content:''; position: absolute; right: -3px; top: 3px; width: 2px; height: 5px; background:#0F172A; border-radius: 0 2px 2px 0;}
+  .bat i { display:block; width: 80%; height: 100%; background:#10B981; border-radius:1px; }
+
+  .screen-content { height: calc(100% - 40px); overflow: hidden; }
+
+  /* ====== SCREEN 1: ONBOARDING ====== */
+  .onboard { background: linear-gradient(160deg, #10B981 0%, #059669 60%, #047857 100%); height: 100%; color: #fff; display: flex; flex-direction: column; padding: 40px 26px 30px; position: relative;}
+  .onboard .logo-circle { width: 76px; height: 76px; border-radius: 24px; background: rgba(255,255,255,0.18); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; font-size: 38px; margin: 30px 0 26px; border: 1px solid rgba(255,255,255,0.3);}
+  .onboard h2 { font-size: 27px; font-weight: 800; line-height: 1.2; }
+  .onboard p { font-size: 14px; opacity: 0.92; margin-top: 12px; line-height: 1.5;}
+  .onboard .feat { margin-top: 24px; display:flex; flex-direction:column; gap: 13px;}
+  .onboard .feat div { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600;}
+  .onboard .feat .check { width: 24px; height:24px; border-radius:50%; background:rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; font-size:12px;}
+  .onboard .cta { margin-top: auto; background: #fff; color: #059669; text-align: center; padding: 16px; border-radius: 16px; font-weight: 800; font-size: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.2);}
+  .onboard .signin { text-align:center; margin-top: 14px; font-size: 13px; opacity: 0.9;}
+  .onboard .signin b { text-decoration: underline;}
+
+  /* ====== COMMON APP HEADER ====== */
+  .appbar { display: flex; align-items: center; justify-content: space-between; padding: 8px 18px 12px; }
+  .appbar .greet small { color: #94A3B8; font-size: 11px; font-weight: 600;}
+  .appbar .greet h3 { font-size: 18px; font-weight: 800; color:#0F172A;}
+  .appbar .avatar-sm { width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg,#10B981,#059669); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800;}
+  .icon-btn { width: 38px; height: 38px; border-radius: 12px; background:#F1F5F9; display:flex; align-items:center; justify-content:center; font-size:16px;}
+
+  .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #E2E8F0; display: flex; justify-content: space-around; padding: 10px 0 18px; }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10px; color: #94A3B8; font-weight: 600; }
+  .nav-item .ic { font-size: 18px; }
+  .nav-item.active { color: #10B981; }
+
+  /* ====== SCREEN 2: DASHBOARD ====== */
+  .dash { height: 100%; background: #F8FAFC; padding-bottom: 70px; overflow-y:auto;}
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; padding: 4px 18px; }
+  .stat-card { background:#fff; border-radius: 18px; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); border: 1px solid #F1F5F9;}
+  .stat-card .si { width: 34px; height:34px; border-radius: 10px; display:flex; align-items:center; justify-content:center; font-size:16px;}
+  .stat-card .sv { font-size: 21px; font-weight: 800; margin-top: 10px; color:#0F172A;}
+  .stat-card .sl { font-size: 11px; color:#94A3B8; font-weight:600;}
+  .stat-card .delta { font-size: 10px; color:#10B981; font-weight:700; margin-top:3px;}
+  .section-h { display:flex; justify-content:space-between; align-items:center; padding: 20px 18px 12px;}
+  .section-h h4 { font-size: 15px; font-weight: 800;}
+  .section-h a { font-size: 12px; color:#10B981; font-weight:700; text-decoration:none;}
+  .quick-actions { display:flex; gap: 10px; padding: 0 18px; overflow-x:auto;}
+  .qa { min-width: 100px; background:#fff; border:1px solid #F1F5F9; border-radius:16px; padding:14px 12px; text-align:center;}
+  .qa .qi { width:38px;height:38px;border-radius:12px; margin:0 auto 8px; display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .qa .qt { font-size: 11px; font-weight:700; color:#334155;}
+
+  /* ====== SCREEN 3: INBOX ====== */
+  .inbox { height:100%; background:#fff;}
+  .inbox-head { background:#10B981; color:#fff; padding: 14px 18px 18px;}
+  .inbox-head h3 { font-size: 20px; font-weight: 800; }
+  .search { margin-top: 12px; background: rgba(255,255,255,0.22); border-radius: 12px; padding: 10px 14px; font-size: 13px; display:flex; align-items:center; gap:8px;}
+  .tabs { display:flex; gap: 18px; padding: 6px 18px 10px; border-bottom:1px solid #F1F5F9;}
+  .tab { font-size:13px; font-weight:700; color:#94A3B8; padding-bottom:10px; border-bottom:2px solid transparent;}
+  .tab.active { color:#10B981; border-color:#10B981;}
+  .conv { display:flex; gap: 12px; padding: 13px 18px; border-bottom:1px solid #F8FAFC; align-items:center;}
+  .conv .av { width:46px;height:46px;border-radius:50%; display:flex;align-items:center;justify-content:center;font-size:19px;color:#fff;font-weight:700;flex-shrink:0;}
+  .conv .ci { flex:1; min-width:0;}
+  .conv .ci .top { display:flex; justify-content:space-between; align-items:center;}
+  .conv .ci .nm { font-size:14px; font-weight:700; color:#0F172A;}
+  .conv .ci .tm { font-size:11px; color:#94A3B8;}
+  .conv .ci .msg { font-size:12.5px; color:#64748B; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:3px;}
+  .badge { background:#10B981; color:#fff; font-size:10px; font-weight:800; min-width:18px; height:18px; border-radius:9px; display:flex;align-items:center;justify-content:center; padding:0 5px;}
+  .bot-tag { background:#EEF2FF; color:#4F46E5; font-size:9px; font-weight:700; padding:1px 5px; border-radius:4px; margin-left:6px;}
+
+  /* ====== SCREEN 4: CHAT ====== */
+  .chat { height:100%; background:#ECE5DD; display:flex; flex-direction:column;}
+  .chat-head { background:#10B981; color:#fff; padding: 10px 14px; display:flex; align-items:center; gap:11px;}
+  .chat-head .av { width:40px;height:40px;border-radius:50%; background:rgba(255,255,255,0.25); display:flex;align-items:center;justify-content:center;font-size:17px;}
+  .chat-head .nm { font-size:15px; font-weight:800;}
+  .chat-head .st { font-size:11px; opacity:0.9;}
+  .chat-body { flex:1; padding: 14px; display:flex; flex-direction:column; gap:8px; overflow:hidden;}
+  .bubble { max-width: 75%; padding: 9px 12px; border-radius: 14px; font-size: 12.5px; line-height:1.4; position:relative;}
+  .bubble.in { background:#fff; align-self:flex-start; border-bottom-left-radius:4px;}
+  .bubble.out { background:#DCF8C6; align-self:flex-end; border-bottom-right-radius:4px;}
+  .bubble .t { font-size:9px; color:#94A3B8; margin-top:3px; text-align:right;}
+  .bubble.bot { background:#EEF2FF; color:#312E81; align-self:flex-start; border:1px dashed #C7D2FE;}
+  .bot-flag { font-size:9px; font-weight:800; color:#4F46E5; margin-bottom:3px;}
+  .chat-input { background:#fff; margin: 8px 10px 10px; border-radius:24px; display:flex; align-items:center; padding: 8px 8px 8px 14px; gap:8px;}
+  .chat-input .txt { flex:1; font-size:13px; color:#94A3B8;}
+  .chat-input .send { width:38px;height:38px;border-radius:50%; background:#10B981; color:#fff; display:flex;align-items:center;justify-content:center;font-size:16px;}
+
+  /* ====== SCREEN 5: BROADCAST ====== */
+  .broadcast { height:100%; background:#F8FAFC; overflow:hidden;}
+  .bc-head { background:#fff; padding: 12px 16px; display:flex; align-items:center; gap:12px; border-bottom:1px solid #F1F5F9;}
+  .bc-head h3 { font-size:16px; font-weight:800; flex:1;}
+  .seg-box { margin: 16px; background:#fff; border-radius:16px; padding:16px; border:1px solid #F1F5F9;}
+  .seg-box label { font-size:12px; font-weight:700; color:#64748B;}
+  .seg-box .aud { display:flex; align-items:center; gap:10px; margin-top:10px;}
+  .seg-box .aud .big { font-size:24px;}
+  .seg-box .aud .lbl { font-size:13px; font-weight:700;}
+  .seg-box .aud .cnt { font-size:11px; color:#10B981; font-weight:700;}
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:12px;}
+  .chip { background:#ECFDF5; color:#059669; font-size:10px; font-weight:700; padding:4px 9px; border-radius:8px;}
+  .compose { margin: 0 16px; background:#fff; border-radius:16px; padding:16px; border:1px solid #F1F5F9;}
+  .compose .ph { font-size:12px; color:#94A3B8; min-height:60px;}
+  .compose .tools { display:flex; gap:14px; margin-top:10px; color:#94A3B8; font-size:16px; border-top:1px solid #F8FAFC; padding-top:10px;}
+  .bc-actions { position:absolute; bottom:0; left:0; right:0; background:#fff; padding: 14px 16px 24px; display:flex; gap:10px; border-top:1px solid #F1F5F9;}
+  .btn-ghost { flex:1; text-align:center; padding:13px; border-radius:14px; border:1.5px solid #E2E8F0; font-size:13px; font-weight:700; color:#475569;}
+  .btn-primary { flex:1.4; text-align:center; padding:13px; border-radius:14px; background:linear-gradient(135deg,#10B981,#059669); font-size:13px; font-weight:800; color:#fff;}
+
+  /* ====== SCREEN 6: SCHEDULER ====== */
+  .sched { height:100%; background:#fff; overflow:hidden;}
+  .sched .list { padding: 6px 0;}
+  .sched-item { display:flex; gap:12px; padding:14px 18px; border-bottom:1px solid #F8FAFC; align-items:center;}
+  .sched-item .time { width:54px; text-align:center;}
+  .sched-item .time .h { font-size:14px; font-weight:800; color:#0F172A;}
+  .sched-item .time .ap { font-size:10px; color:#94A3B8; font-weight:700;}
+  .sched-item .bar { width:3px; height:38px; border-radius:2px; background:#10B981;}
+  .sched-item.purple .bar { background:#8B5CF6;}
+  .sched-item.orange .bar { background:#F59E0B;}
+  .sched-item .info { flex:1;}
+  .sched-item .info .ttl { font-size:13px; font-weight:700; color:#0F172A;}
+  .sched-item .info .meta { font-size:11px; color:#64748B; margin-top:2px;}
+  .sched-item .toggle { width:38px;height:22px;border-radius:11px; background:#10B981; position:relative;}
+  .sched-item .toggle::after { content:''; position:absolute; right:2px; top:2px; width:18px;height:18px;border-radius:50%; background:#fff;}
+  .fab { position:absolute; bottom:24px; right:18px; width:54px;height:54px;border-radius:18px; background:linear-gradient(135deg,#10B981,#059669); color:#fff; display:flex;align-items:center;justify-content:center; font-size:26px; box-shadow:0 10px 24px rgba(16,185,129,0.45);}
+
+  /* ====== SCREEN 7: CHATBOT ====== */
+  .bot-conf { height:100%; background:#F8FAFC; overflow:hidden;}
+  .bot-card { margin: 14px 16px; background:#fff; border-radius:16px; padding:16px; border:1px solid #F1F5F9; display:flex; gap:12px; align-items:center;}
+  .bot-card .ai-ic { width:44px;height:44px;border-radius:14px; background:linear-gradient(135deg,#8B5CF6,#6366F1); color:#fff; display:flex;align-items:center;justify-content:center; font-size:20px;}
+  .bot-card .tt { font-size:13px; font-weight:800;}
+  .bot-card .ds { font-size:11px; color:#64748B; margin-top:2px;}
+  .bot-card .tg { width:40px;height:23px;border-radius:12px; background:#8B5CF6; position:relative;}
+  .bot-card .tg::after{content:'';position:absolute;right:2px;top:2px;width:19px;height:19px;border-radius:50%;background:#fff;}
+  .rule { margin: 0 16px 12px; background:#fff; border-radius:16px; padding:14px; border:1px solid #F1F5F9;}
+  .rule .rh { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+  .rule .rh .lbl { font-size:11px; font-weight:800; color:#8B5CF6; text-transform:uppercase; letter-spacing:0.5px;}
+  .rule .kw { background:#F5F3FF; color:#6D28D9; font-size:12px; font-weight:700; padding:7px 10px; border-radius:8px; display:inline-block;}
+  .rule .arr { text-align:center; color:#CBD5E1; font-size:14px; margin: 6px 0;}
+  .rule .resp { background:#F8FAFC; font-size:12px; color:#334155; padding:8px 10px; border-radius:8px; line-height:1.4;}
+
+  /* ====== SCREEN 8: PRICING ====== */
+  .pricing { height:100%; background:#F8FAFC; overflow-y:auto;}
+  .pricing .ph { text-align:center; padding: 18px 18px 6px;}
+  .pricing .ph h3 { font-size:20px; font-weight:800;}
+  .pricing .ph p { font-size:12px; color:#64748B; margin-top:5px;}
+  .plan { margin: 12px 16px; background:#fff; border-radius:18px; padding:18px; border:1.5px solid #F1F5F9;}
+  .plan.pop { border-color:#10B981; box-shadow:0 10px 30px rgba(16,185,129,0.15); position:relative;}
+  .plan.pop .ribbon { position:absolute; top:-10px; right:16px; background:linear-gradient(135deg,#10B981,#059669); color:#fff; font-size:10px; font-weight:800; padding:4px 10px; border-radius:8px;}
+  .plan .pn { font-size:15px; font-weight:800;}
+  .plan .pp { font-size:26px; font-weight:800; margin-top:6px;}
+  .plan .pp small { font-size:12px; color:#94A3B8; font-weight:600;}
+  .plan ul { list-style:none; margin-top:12px;}
+  .plan li { font-size:12px; color:#475569; padding:5px 0 5px 22px; position:relative;}
+  .plan li::before { content:'✓'; position:absolute; left:0; color:#10B981; font-weight:800;}
+  .plan .cbtn { margin-top:14px; text-align:center; padding:12px; border-radius:12px; background:#F1F5F9; color:#334155; font-weight:700; font-size:13px;}
+  .plan.pop .cbtn { background:linear-gradient(135deg,#10B981,#059669); color:#fff;}
+</style>
+</head>
+<body>
+
+<div class="board-header">
+  <h1>Wa<span>Flow</span> — Maquettes UI/UX</h1>
+  <p>Plateforme de gestion WhatsApp · 8 écrans clés · Design mobile (Flutter) · v1.0</p>
+</div>
+
+<!-- ============ FLOW 1: ONBOARDING ============ -->
+<div class="flow-section">
+  <div class="flow-title">
+    <div class="num">1</div>
+    <div><h2>Onboarding & Connexion</h2><small>Première expérience utilisateur</small></div>
+  </div>
+  <div class="screens">
+
+    <!-- ONBOARDING -->
+    <div class="screen-wrap">
+      <div class="phone"><div class="notch"></div>
+        <div class="phone-screen">
+          <div class="onboard">
+            <div class="statusbar" style="color:#fff"><span>9:41</span>
+              <div class="icons" style="color:#fff"><span>●●●</span><span>📶</span><div class="bat" style="border-color:#fff"><i style="background:#fff"></i></div></div>
+            </div>
+            <div class="logo-circle">💬</div>
+            <h2>Gérez tout votre WhatsApp, automatiquement.</h2>
+            <p>Réponses auto, campagnes, programmation et chatbot IA — dans une seule application.</p>
+            <div class="feat">
+              <div><div class="check">✓</div> Réponses automatiques intelligentes</div>
+              <div><div class="check">✓</div> Campagnes multi-contacts opt-in</div>
+              <div><div class="check">✓</div> Programmation de messages</div>
+            </div>
+            <div class="cta">Connecter mon WhatsApp →</div>
+            <div class="signin">Déjà un compte ? <b>Se connecter</b></div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">Bienvenue</div>
+      <div class="screen-sub">Splash + value proposition</div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div class="screen-wrap">
+      <div class="phone"><div class="notch"></div>
+        <div class="phone-screen">
+          <div class="screen-content">
+          <div class="dash">
+            <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+            <div class="appbar">
+              <div class="greet"><small>Bonjour 👋</small><h3>Tableau de bord</h3></div>
+              <div class="icon-btn">🔔</div>
+            </div>
+            <div class="stats-grid">
+              <div class="stat-card"><div class="si" style="background:#ECFDF5">💬</div><div class="sv">1 284</div><div class="sl">Messages (7j)</div><div class="delta">▲ 12%</div></div>
+              <div class="stat-card"><div class="si" style="background:#EFF6FF">👥</div><div class="sv">856</div><div class="sl">Contacts</div><div class="delta">▲ 8%</div></div>
+              <div class="stat-card"><div class="si" style="background:#F5F3FF">📨</div><div class="sv">24</div><div class="sl">Campagnes</div><div class="delta">▲ 5%</div></div>
+              <div class="stat-card"><div class="si" style="background:#FFF7ED">🤖</div><div class="sv">92%</div><div class="sl">Bot actif</div><div class="delta">▲ taux</div></div>
+            </div>
+            <div class="section-h"><h4>Actions rapides</h4><a>Voir tout</a></div>
+            <div class="quick-actions">
+              <div class="qa"><div class="qi" style="background:#ECFDF5">📤</div><div class="qt">Broadcast</div></div>
+              <div class="qa"><div class="qi" style="background:#EFF6FF">⏰</div><div class="qt">Programmer</div></div>
+              <div class="qa"><div class="qi" style="background:#F5F3FF">🤖</div><div class="qt">Chatbot</div></div>
+              <div class="qa"><div class="qi" style="background:#FFF7ED">➕</div><div class="qt">Contact</div></div>
+            </div>
+            <div class="section-h"><h4>Conversations récentes</h4><a>Boîte</a></div>
+            <div style="padding:0 18px; display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex;gap:10px;align-items:center;background:#fff;padding:10px;border-radius:14px;border:1px solid #F1F5F9;">
+                <div style="width:36px;height:36px;border-radius:50%;background:#3B82F6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">SK</div>
+                <div style="flex:1;"><div style="font-size:12px;font-weight:700;">Sara Klein</div><div style="font-size:11px;color:#94A3B8;">Merci pour la confirmation !</div></div>
+                <div style="font-size:10px;color:#94A3B8;">2m</div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:center;background:#fff;padding:10px;border-radius:14px;border:1px solid #F1F5F9;">
+                <div style="width:36px;height:36px;border-radius:50%;background:#F59E0B;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;">AB</div>
+                <div style="flex:1;"><div style="font-size:12px;font-weight:700;">Ahmed B. <span class="bot-tag">BOT</span></div><div style="font-size:11px;color:#94A3B8;">Répondu automatiquement</div></div>
+                <div style="font-size:10px;color:#94A3B8;">8m</div>
+              </div>
+            </div>
+          </div>
+          <div class="bottom-nav">
+            <div class="nav-item active"><span class="ic">🏠</span>Accueil</div>
+            <div class="nav-item"><span class="ic">💬</span>Inbox</div>
+            <div class="nav-item"><span class="ic">📤</span>Campagnes</div>
+            <div class="nav-item"><span class="ic">👥</span>Contacts</div>
+            <div class="nav-item"><span class="ic">⚙️</span>Réglages</div>
+          </div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">Tableau de bord</div>
+      <div class="screen-sub">Vue d'ensemble + stats</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FLOW 2: MESSAGERIE ============ -->
+<div class="flow-section">
+  <div class="flow-title">
+    <div class="num">2</div>
+    <div><h2>Messagerie & Conversations</h2><small>Inbox unifiée + chatbot IA</small></div>
+  </div>
+  <div class="screens">
+
+    <!-- INBOX -->
+    <div class="screen-wrap">
+      <div class="phone"><div class="notch"></div>
+        <div class="phone-screen">
+          <div class="screen-content">
+          <div class="inbox">
+            <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+            <div class="inbox-head">
+              <h3>Boîte de réception</h3>
+              <div class="search">🔍 Rechercher une conversation…</div>
+            </div>
+            <div class="tabs">
+              <div class="tab active">Toutes</div>
+              <div class="tab">Non lues <span style="background:#10B981;color:#fff;border-radius:8px;padding:0 5px;font-size:9px;margin-left:3px;">7</span></div>
+              <div class="tab">Bot</div>
+            </div>
+            <div class="conv">
+              <div class="av" style="background:#3B82F6;">SK</div>
+              <div class="ci"><div class="top"><span class="nm">Sara Klein</span><span class="tm">14:32</span></div>
+                <div class="msg">Bonjour, ma commande est-elle prête ?</div></div>
+              <div class="badge">2</div>
+            </div>
+            <div class="conv">
+              <div class="av" style="background:#F59E0B;">AB</div>
+              <div class="ci"><div class="top"><span class="nm">Ahmed Benali <span class="bot-tag">BOT</span></span><span class="tm">14:20</span></div>
+                <div class="msg">🤖 Répondu automatiquement</div></div>
+            </div>
+            <div class="conv">
+              <div class="av" style="background:#EF4444;">ME</div>
+              <div class="ci"><div class="top"><span class="nm">Marie Evrard</span><span class="tm">13:55</span></div>
+                <div class="msg">Merci ! Je recommande 👌</div></div>
+            </div>
+            <div class="conv">
+              <div class="av" style="background:#8B5CF6;">YL</div>
+              <div class="ci"><div class="top"><span class="nm">Youssef Lahlou</span><span class="tm">13:40</span></div>
+                <div class="msg">Vous acceptez le paiement à la livraison ?</div></div>
+              <div class="badge">1</div>
+            </div>
+            <div class="conv">
+              <div class="av" style="background:#10B981;">CK</div>
+              <div class="ci"><div class="top"><span class="nm">Clinique Dental</span><span class="tm">12:10</span></div>
+                <div class="msg">Rappel RDV demain 10h ✓</div></div>
+            </div>
+          </div>
+          <div class="bottom-nav">
+            <div class="nav-item"><span class="ic">🏠</span>Accueil</div>
+            <div class="nav-item active"><span class="ic">💬</span>Inbox</div>
+            <div class="nav-item"><span class="ic">📤</span>Campagnes</div>
+            <div class="nav-item"><span class="ic">👥</span>Contacts</div>
+            <div class="nav-item"><span class="ic">⚙️</span>Réglages</div>
+          </div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">Boîte de réception</div>
+      <div class="screen-sub">Inbox unifiée multi-contacts</div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="screen-wrap">
+      <div class="phone"><div class="notch"></div>
+        <div class="phone-screen">
+          <div class="screen-content">
+          <div class="chat">
+            <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+            <div class="chat-head">
+              <span style="font-size:18px;">‹</span>
+              <div class="av">SK</div>
+              <div><div class="nm">Sara Klein</div><div class="st">En ligne</div></div>
+              <span style="margin-left:auto;font-size:16px;">📞</span>
+              <span style="font-size:16px;">⋮</span>
+            </div>
+            <div class="chat-body">
+              <div class="bubble in">Bonjour 👋 J'ai vu votre post sur le sac à main.</div>
+              <div class="bubble in">Est-il encore disponible ?</div>
+              <div class="bubble bot"><div class="bot-flag">🤖 Réponse automatique (Bot)</div>Bonjour Sara ! Oui, il est disponible 😊 Souhaitez-vous le commander ?</div>
+              <div class="bubble in">Super ! Combien et comment je paie ?</div>
+              <div class="bubble out">Il est à 349 DH 💳 Paiement par carte ou à la livraison. Je vous envoie le lien ?<div class="t">✓✓ 14:31</div></div>
+            </div>
+            <div class="chat-input">
+              <span class="txt">Écrire un message…</span>
+              <span style="font-size:18px;color:#94A3B8;">😊</span>
+              <span style="font-size:18px;color:#94A3B8;">📎</span>
+              <div class="send">➤</div>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">Conversation</div>
+      <div class="screen-sub">Chat + réponse automatique IA</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FLOW 3: AUTOMATISATION ============ -->
+<div class="flow-section">
+  <div class="flow-title">
+    <div class="num">3</div>
+    <div><h2>Campagnes & Automatisation</h2><small>Boost de productivité (Premium)</small></div>
+  </div>
+  <div class="screens">
+
+    <!-- BROADCAST -->
+    <div class="screen-wrap">
+      <div class="phone"><div class="notch"></div>
+        <div class="phone-screen">
+          <div class="screen-content">
+          <div class="broadcast">
+            <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+            <div class="bc-head"><span style="font-size:18px;">‹</span><h3>Nouvelle campagne</h3><span style="font-size:16px;">💾</span></div>
+            <div class="seg-box">
+              <label>👥 Audience (opt-in)</label>
+              <div class="aud"><span class="big">🎯</span><div><div class="lbl">Clients fidèles</div><div class="cnt">412 contacts</div></div></div>
+              <div class="chips"><span class="chip">Casablanca</span><span class="chip">+1 achat</span><span class="chip">VIP</span></div>
+            </div>
+            <div class="compose">
+              <div class="ph">Bonjour {prénom} 👋<br><br>Solde exclusif -30% ce week-end seulement !<br><br>Tapez SOLDE pour recevoir votre code 🎁</div>
+              <div class="tools">📎 😊 🖼️ 🎟️ {variable}</div>
+            </div>
+            <div class="bc-actions">
+              <div class="btn-ghost">⏰ Programmer</div>
+              <div class="btn-primary">🚀 Envoyer à 412</div>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">Campagne (Broadcast)</div>
+      <div class="screen-sub">Envoi multi-contacts opt-in</div>
+    </div>
+
+    <!-- SCHEDULER -->
+    <div class="screen-wrap">
+      <div class="phone"><div class="notch"></div>
+        <div class="phone-screen">
+          <div class="screen-content">
+          <div class="sched">
+            <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+            <div class="appbar"><div class="greet"><small>Mercredi 29 juillet</small><h3>Programmation</h3></div><div class="icon-btn">📅</div></div>
+            <div class="list">
+              <div class="sched-item">
+                <div class="time"><div class="h">09:00</div><div class="ap">MATIN</div></div>
+                <div class="bar"></div>
+                <div class="info"><div class="ttl">Promotion du jour</div><div class="meta">Campaigne · 412 contacts · Quotidien</div></div>
+                <div class="toggle"></div>
+              </div>
+              <div class="sched-item purple">
+                <div class="time"><div class="h">12:30</div><div class="ap">MIDI</div></div>
+                <div class="bar"></div>
+                <div class="info"><div class="ttl">Rappel de rendez-vous</div><div class="meta">Clinique · Auto · Lun-Ven</div></div>
+                <div class="toggle"></div>
+              </div>
+              <div class="sched-item orange">
+                <div class="time"><div class="h">18:00</div><div class="ap">SOIR</div></div>
+                <div class="bar"></div>
+                <div class="info"><div class="ttl">Statut du soir 📸</div><div class="meta">Photo produit · Une fois</div></div>
+                <div class="toggle"></div>
+              </div>
+              <div class="sched-item">
+                <div class="time"><div class="h">20:00</div><div class="ap">SOIR</div></div>
+                <div class="bar"></div>
+                <div class="info"><div class="ttl">Message d'anniversaire 🎂</div><div class="meta">Séquence · 3 contacts</div></div>
+                <div class="toggle"></div>
+              </div>
+            </div>
+            <div class="fab">＋</div>
+          </div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">Programmation</div>
+      <div class="screen-sub">Messages & statuts planifiés</div>
+    </div>
+
+    <!-- CHATBOT -->
+    <div class="screen-wrap">
+      <div class="phone"><div class="notch"></div>
+        <div class="phone-screen">
+          <div class="screen-content">
+          <div class="bot-conf">
+            <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+            <div class="appbar"><span style="font-size:18px;">‹</span><div class="greet" style="margin-left:8px;"><h3>Assistant IA</h3></div></div>
+            <div class="bot-card">
+              <div class="ai-ic">🤖</div>
+              <div style="flex:1;"><div class="tt">Réponse IA automatique</div><div class="ds">GPT-4 répond à vos clients 24/7</div></div>
+              <div class="tg"></div>
+            </div>
+            <div style="padding:0 16px;"><div style="font-size:11px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:0.5px;">Règles personnalisées</div></div>
+            <div class="rule" style="margin-top:8px;">
+              <div class="rh"><span class="lbl">Règle 1</span><span style="font-size:12px;color:#10B981;font-weight:700;">Active</span></div>
+              <span class="kw">« prix » · « combien »</span>
+              <div class="arr">↓</div>
+              <div class="resp">Répond avec le catalogue produits + lien de paiement 💳</div>
+            </div>
+            <div class="rule">
+              <div class="rh"><span class="lbl">Règle 2</span><span style="font-size:12px;color:#10B981;font-weight:700;">Active</span></div>
+              <span class="kw">« horaires » · « ouvert »</span>
+              <div class="arr">↓</div>
+              <div class="resp">Nous sommes ouverts de 9h à 19h, lun-sam 🕘</div>
+            </div>
+            <div style="text-align:center;margin:14px 16px;padding:12px;border:1.5px dashed #CBD5E1;border-radius:14px;color:#94A3B8;font-size:12px;font-weight:700;">＋ Ajouter une règle</div>
+          </div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">Chatbot IA</div>
+      <div class="screen-sub">Réponses auto + règles</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FLOW 4: MONETISATION ============ -->
+<div class="flow-section">
+  <div class="flow-title">
+    <div class="num">4</div>
+    <div><h2>Monétisation & Abonnements</h2><small>Modèle Freemium (Free / Pro / Business)</small></div>
+  </div>
+  <div class="screens">
+
+    <!-- PRICING -->
+    <div class="screen-wrap">
+      <div class="phone"><div class="notch"></div>
+        <div class="phone-screen">
+          <div class="screen-content">
+          <div class="pricing">
+            <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+            <div class="appbar"><span style="font-size:18px;">‹</span><div class="greet" style="margin-left:8px;"><h3>Passer Premium</h3></div></div>
+            <div class="ph"><h3>Choisissez votre plan</h3><p>Annulez à tout moment · Sans engagement</p></div>
+            <div class="plan">
+              <div class="pn">🆓 Free</div>
+              <div class="pp">0 DH<small> /mois</small></div>
+              <ul><li>1 numéro WhatsApp</li><li>100 contacts</li><li>50 msg programmés</li><li>Réponses simples</li></ul>
+              <div class="cbtn">Plan actuel</div>
+            </div>
+            <div class="plan pop">
+              <div class="ribbon">⭐ POPULAIRE</div>
+              <div class="pn">Pro</div>
+              <div class="pp">290 DH<small> /mois</small></div>
+              <ul><li>Chatbot IA (GPT-4)</li><li>1 000 contacts opt-in</li><li>Campagnes illimitées</li><li>3 agents</li><li>Séquences auto</li></ul>
+              <div class="cbtn">Choisir Pro →</div>
+            </div>
+            <div class="plan">
+              <div class="pn">🏢 Business</div>
+              <div class="pp">890 DH<small> /mois</small></div>
+              <ul><li>10 000 contacts opt-in</li><li>Multi-numéros</li><li>Agents illimités</li><li>Marque blanche + API</li></ul>
+              <div class="cbtn">Choisir Business</div>
+            </div>
+          </div>
+          </div>
+        </div>
+      </div>
+      <div class="screen-label">Abonnements</div>
+      <div class="screen-sub">Tunnel Freemium → Premium</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

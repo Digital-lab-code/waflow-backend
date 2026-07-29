@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WaFlow — Prototype cliquable</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; }
+  body { background: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 60%, #020617 100%); min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px 16px; color:#0F172A; }
+
+  /* ---- Hint banner ---- */
+  .hint-banner { color:#CBD5E1; font-size:13px; margin-bottom:14px; text-align:center; font-weight:600; }
+  .hint-banner b { color:#34D399; }
+  .hint-banner button { background:none; border:none; color:#60A5FA; cursor:pointer; font-weight:700; text-decoration:underline; font-size:13px; }
+  body.no-hints .tap::after { display:none !important; }
+
+  /* ---- PHONE ---- */
+  .phone { width:300px; height:620px; background:#000; border-radius:46px; padding:12px; box-shadow:0 30px 60px -12px rgba(0,0,0,0.6),0 0 0 3px #1E293B; position:relative; }
+  .phone-screen { width:100%; height:100%; border-radius:36px; overflow:hidden; background:#fff; position:relative; }
+  .notch { position:absolute; top:15px; left:50%; transform:translateX(-50%); width:96px; height:26px; background:#000; border-radius:16px; z-index:60; }
+
+  .screen { position:absolute; inset:0; opacity:0; pointer-events:none; transition:opacity .32s ease, transform .32s ease; transform:translateY(10px) scale(.99); }
+  .screen.active { opacity:1; pointer-events:auto; transform:translateY(0) scale(1); }
+
+  /* tappable highlight */
+  .tap { position:relative; }
+  .tap::after { content:''; position:absolute; inset:-2px; border-radius:inherit; border:2px dashed #34D399; opacity:0; animation:pulse 2s ease-in-out infinite; pointer-events:none; z-index:5; }
+  @keyframes pulse { 0%,100%{opacity:0;} 50%{opacity:.85;} }
+
+  /* ---- statusbar ---- */
+  .statusbar { display:flex; justify-content:space-between; align-items:center; padding:16px 26px 6px; font-size:13px; font-weight:700; }
+  .statusbar .icons { display:flex; gap:5px; align-items:center; font-size:11px; }
+  .bat { width:22px; height:11px; border:1.5px solid currentColor; border-radius:3px; position:relative; padding:1px; }
+  .bat::after { content:''; position:absolute; right:-3px; top:3px; width:2px; height:5px; background:currentColor; border-radius:0 2px 2px 0; }
+  .bat i { display:block; width:80%; height:100%; background:#10B981; border-radius:1px; }
+
+  /* ===== ONBOARDING ===== */
+  .onboard { background:linear-gradient(160deg,#10B981 0%,#059669 60%,#047857 100%); height:100%; color:#fff; display:flex; flex-direction:column; padding:40px 26px 30px;}
+  .onboard .logo-circle { width:76px; height:76px; border-radius:24px; background:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; font-size:38px; margin:24px 0 24px; border:1px solid rgba(255,255,255,.3);}
+  .onboard h2 { font-size:26px; font-weight:800; line-height:1.2; }
+  .onboard p { font-size:13.5px; opacity:.92; margin-top:12px; line-height:1.5;}
+  .onboard .feat { margin-top:22px; display:flex; flex-direction:column; gap:13px;}
+  .onboard .feat div { display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600;}
+  .onboard .feat .check { width:24px; height:24px; border-radius:50%; background:rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; font-size:12px;}
+  .onboard .cta { margin-top:auto; background:#fff; color:#059669; text-align:center; padding:16px; border-radius:16px; font-weight:800; font-size:15px; box-shadow:0 8px 20px rgba(0,0,0,.2); cursor:pointer;}
+  .onboard .signin { text-align:center; margin-top:14px; font-size:13px; opacity:.9;}
+
+  /* ===== COMMON ===== */
+  .appbar { display:flex; align-items:center; justify-content:space-between; padding:8px 18px 12px; }
+  .appbar .greet small { color:#94A3B8; font-size:11px; font-weight:600;}
+  .appbar .greet h3 { font-size:18px; font-weight:800; color:#0F172A;}
+  .icon-btn { width:38px; height:38px; border-radius:12px; background:#F1F5F9; display:flex; align-items:center; justify-content:center; font-size:16px;}
+  .bottom-nav { position:absolute; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #E2E8F0; display:flex; justify-content:space-around; padding:10px 0 18px; z-index:40;}
+  .nav-item { display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10px; color:#94A3B8; font-weight:600; cursor:pointer; background:none; border:none;}
+  .nav-item .ic { font-size:18px;}
+  .nav-item.active { color:#10B981;}
+
+  .dash { height:100%; background:#F8FAFC; padding-bottom:70px; overflow-y:auto;}
+  .stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:11px; padding:4px 18px;}
+  .stat-card { background:#fff; border-radius:18px; padding:14px; box-shadow:0 1px 3px rgba(0,0,0,.04); border:1px solid #F1F5F9;}
+  .stat-card .si { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:16px;}
+  .stat-card .sv { font-size:21px; font-weight:800; margin-top:10px;}
+  .stat-card .sl { font-size:11px; color:#94A3B8; font-weight:600;}
+  .stat-card .delta { font-size:10px; color:#10B981; font-weight:700;}
+  .section-h { display:flex; justify-content:space-between; align-items:center; padding:20px 18px 12px;}
+  .section-h h4 { font-size:15px; font-weight:800;}
+  .section-h a { font-size:12px; color:#10B981; font-weight:700; cursor:pointer;}
+  .quick-actions { display:flex; gap:10px; padding:0 18px; overflow-x:auto;}
+  .qa { min-width:100px; background:#fff; border:1px solid #F1F5F9; border-radius:16px; padding:14px 12px; text-align:center; cursor:pointer;}
+  .qa .qi { width:38px; height:38px; border-radius:12px; margin:0 auto 8px; display:flex; align-items:center; justify-content:center; font-size:18px;}
+  .qa .qt { font-size:11px; font-weight:700; color:#334155;}
+  .rcard { display:flex; gap:10px; align-items:center; background:#fff; padding:10px; border-radius:14px; border:1px solid #F1F5F9; cursor:pointer;}
+  .rcard .av { width:36px; height:36px; border-radius:50%; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0;}
+  .rcard .nm { font-size:12px; font-weight:700;}
+  .rcard .mg { font-size:11px; color:#94A3B8;}
+
+  /* premium banner */
+  .promo { margin:6px 18px 0; background:linear-gradient(135deg,#7C3AED,#6366F1); border-radius:16px; padding:13px 15px; color:#fff; display:flex; align-items:center; gap:12px; cursor:pointer;}
+  .promo .ic { font-size:24px;}
+  .promo .t { font-size:13px; font-weight:800;}
+  .promo .s { font-size:11px; opacity:.9;}
+
+  /* ===== INBOX ===== */
+  .inbox { height:100%; background:#fff;}
+  .inbox-head { background:#10B981; color:#fff; padding:14px 18px 18px;}
+  .inbox-head h3 { font-size:20px; font-weight:800;}
+  .search { margin-top:12px; background:rgba(255,255,255,.22); border-radius:12px; padding:10px 14px; font-size:13px;}
+  .tabs { display:flex; gap:18px; padding:6px 18px 10px; border-bottom:1px solid #F1F5F9;}
+  .tab { font-size:13px; font-weight:700; color:#94A3B8; padding-bottom:10px; border-bottom:2px solid transparent; cursor:pointer;}
+  .tab.active { color:#10B981; border-color:#10B981;}
+  .conv { display:flex; gap:12px; padding:13px 18px; border-bottom:1px solid #F8FAFC; align-items:center; cursor:pointer;}
+  .conv .av { width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:19px; color:#fff; font-weight:700; flex-shrink:0;}
+  .conv .ci { flex:1; min-width:0;}
+  .conv .ci .top { display:flex; justify-content:space-between; align-items:center;}
+  .conv .ci .nm { font-size:14px; font-weight:700;}
+  .conv .ci .tm { font-size:11px; color:#94A3B8;}
+  .conv .ci .msg { font-size:12.5px; color:#64748B; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:3px;}
+  .badge { background:#10B981; color:#fff; font-size:10px; font-weight:800; min-width:18px; height:18px; border-radius:9px; display:flex; align-items:center; justify-content:center; padding:0 5px;}
+  .bot-tag { background:#EEF2FF; color:#4F46E5; font-size:9px; font-weight:700; padding:1px 5px; border-radius:4px;}
+
+  /* ===== CHAT ===== */
+  .chat { height:100%; background:#ECE5DD; display:flex; flex-direction:column;}
+  .chat-head { background:#10B981; color:#fff; padding:10px 14px; display:flex; align-items:center; gap:11px;}
+  .chat-head .av { width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; font-size:17px;}
+  .chat-head .nm { font-size:15px; font-weight:800;}
+  .chat-head .st { font-size:11px; opacity:.9;}
+  .chat-body { flex:1; padding:14px; display:flex; flex-direction:column; gap:8px; overflow:hidden;}
+  .bubble { max-width:75%; padding:9px 12px; border-radius:14px; font-size:12.5px; line-height:1.4;}
+  .bubble.in { background:#fff; align-self:flex-start; border-bottom-left-radius:4px;}
+  .bubble.out { background:#DCF8C6; align-self:flex-end; border-bottom-right-radius:4px;}
+  .bubble .t { font-size:9px; color:#94A3B8; margin-top:3px; text-align:right;}
+  .bubble.bot { background:#EEF2FF; color:#312E81; align-self:flex-start; border:1px dashed #C7D2FE;}
+  .bot-flag { font-size:9px; font-weight:800; color:#4F46E5; margin-bottom:3px;}
+  .chat-input { background:#fff; margin:8px 10px 10px; border-radius:24px; display:flex; align-items:center; padding:8px; gap:8px;}
+  .chat-input .txt { flex:1; font-size:13px; color:#94A3B8; padding-left:6px;}
+  .chat-input .send { width:38px; height:38px; border-radius:50%; background:#10B981; color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer;}
+  .back { font-size:18px; cursor:pointer; padding-right:4px;}
+
+  /* ===== BROADCAST ===== */
+  .broadcast { height:100%; background:#F8FAFC; overflow:hidden;}
+  .bc-head { background:#fff; padding:12px 16px; display:flex; align-items:center; gap:12px; border-bottom:1px solid #F1F5F9;}
+  .bc-head h3 { font-size:16px; font-weight:800; flex:1;}
+  .seg-box { margin:16px; background:#fff; border-radius:16px; padding:16px; border:1px solid #F1F5F9;}
+  .seg-box label { font-size:12px; font-weight:700; color:#64748B;}
+  .seg-box .aud { display:flex; align-items:center; gap:10px; margin-top:10px;}
+  .seg-box .aud .big { font-size:24px;}
+  .seg-box .aud .lbl { font-size:13px; font-weight:700;}
+  .seg-box .aud .cnt { font-size:11px; color:#10B981; font-weight:700;}
+  .chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:12px;}
+  .chip { background:#ECFDF5; color:#059669; font-size:10px; font-weight:700; padding:4px 9px; border-radius:8px;}
+  .compose { margin:0 16px; background:#fff; border-radius:16px; padding:16px; border:1px solid #F1F5F9;}
+  .compose .ph { font-size:12px; color:#475569; min-height:60px;}
+  .compose .tools { display:flex; gap:14px; margin-top:10px; color:#94A3B8; font-size:16px; border-top:1px solid #F8FAFC; padding-top:10px;}
+  .bc-actions { position:absolute; bottom:0; left:0; right:0; background:#fff; padding:14px 16px 24px; display:flex; gap:10px; border-top:1px solid #F1F5F9;}
+  .btn-ghost { flex:1; text-align:center; padding:13px; border-radius:14px; border:1.5px solid #E2E8F0; font-size:13px; font-weight:700; color:#475569; cursor:pointer;}
+  .btn-primary { flex:1.4; text-align:center; padding:13px; border-radius:14px; background:linear-gradient(135deg,#10B981,#059669); font-size:13px; font-weight:800; color:#fff; cursor:pointer;}
+
+  /* ===== SCHEDULER ===== */
+  .sched { height:100%; background:#fff; overflow:hidden;}
+  .sched .list { padding:6px 0;}
+  .sched-item { display:flex; gap:12px; padding:14px 18px; border-bottom:1px solid #F8FAFC; align-items:center;}
+  .sched-item .time { width:54px; text-align:center;}
+  .sched-item .time .h { font-size:14px; font-weight:800;}
+  .sched-item .time .ap { font-size:10px; color:#94A3B8; font-weight:700;}
+  .sched-item .bar { width:3px; height:38px; border-radius:2px; background:#10B981;}
+  .sched-item.purple .bar { background:#8B5CF6;}
+  .sched-item.orange .bar { background:#F59E0B;}
+  .sched-item .info { flex:1;}
+  .sched-item .info .ttl { font-size:13px; font-weight:700;}
+  .sched-item .info .meta { font-size:11px; color:#64748B; margin-top:2px;}
+  .toggle { width:38px; height:22px; border-radius:11px; background:#10B981; position:relative; cursor:pointer;}
+  .toggle::after { content:''; position:absolute; right:2px; top:2px; width:18px; height:18px; border-radius:50%; background:#fff;}
+  .toggle.off { background:#CBD5E1;}
+  .toggle.off::after { right:auto; left:2px;}
+  .fab { position:absolute; bottom:24px; right:18px; width:54px; height:54px; border-radius:18px; background:linear-gradient(135deg,#10B981,#059669); color:#fff; display:flex; align-items:center; justify-content:center; font-size:26px; box-shadow:0 10px 24px rgba(16,185,129,.45); cursor:pointer;}
+
+  /* ===== CHATBOT ===== */
+  .bot-conf { height:100%; background:#F8FAFC; overflow:hidden;}
+  .bot-card { margin:14px 16px; background:#fff; border-radius:16px; padding:16px; border:1px solid #F1F5F9; display:flex; gap:12px; align-items:center;}
+  .bot-card .ai-ic { width:44px; height:44px; border-radius:14px; background:linear-gradient(135deg,#8B5CF6,#6366F1); color:#fff; display:flex; align-items:center; justify-content:center; font-size:20px;}
+  .bot-card .tt { font-size:13px; font-weight:800;}
+  .bot-card .ds { font-size:11px; color:#64748B; margin-top:2px;}
+  .rule { margin:0 16px 12px; background:#fff; border-radius:16px; padding:14px; border:1px solid #F1F5F9;}
+  .rule .rh { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+  .rule .rh .lbl { font-size:11px; font-weight:800; color:#8B5CF6; text-transform:uppercase;}
+  .rule .kw { background:#F5F3FF; color:#6D28D9; font-size:12px; font-weight:700; padding:7px 10px; border-radius:8px; display:inline-block;}
+  .rule .arr { text-align:center; color:#CBD5E1; font-size:14px; margin:6px 0;}
+  .rule .resp { background:#F8FAFC; font-size:12px; color:#334155; padding:8px 10px; border-radius:8px; line-height:1.4;}
+  .add-rule { text-align:center; margin:14px 16px; padding:12px; border:1.5px dashed #CBD5E1; border-radius:14px; color:#94A3B8; font-size:12px; font-weight:700; cursor:pointer;}
+
+  /* ===== PRICING ===== */
+  .pricing { height:100%; background:#F8FAFC; overflow-y:auto; padding-bottom:20px;}
+  .pricing .ph { text-align:center; padding:18px 18px 6px;}
+  .pricing .ph h3 { font-size:20px; font-weight:800;}
+  .pricing .ph p { font-size:12px; color:#64748B; margin-top:5px;}
+  .plan { margin:12px 16px; background:#fff; border-radius:18px; padding:18px; border:1.5px solid #F1F5F9;}
+  .plan.pop { border-color:#10B981; box-shadow:0 10px 30px rgba(16,185,129,.15); position:relative;}
+  .plan.pop .ribbon { position:absolute; top:-10px; right:16px; background:linear-gradient(135deg,#10B981,#059669); color:#fff; font-size:10px; font-weight:800; padding:4px 10px; border-radius:8px;}
+  .plan .pn { font-size:15px; font-weight:800;}
+  .plan .pp { font-size:26px; font-weight:800; margin-top:6px;}
+  .plan .pp small { font-size:12px; color:#94A3B8; font-weight:600;}
+  .plan ul { list-style:none; margin-top:12px;}
+  .plan li { font-size:12px; color:#475569; padding:5px 0 5px 22px; position:relative;}
+  .plan li::before { content:'✓'; position:absolute; left:0; color:#10B981; font-weight:800;}
+  .plan .cbtn { margin-top:14px; text-align:center; padding:12px; border-radius:12px; background:#F1F5F9; color:#334155; font-weight:700; font-size:13px; cursor:pointer;}
+  .plan.pop .cbtn { background:linear-gradient(135deg,#10B981,#059669); color:#fff;}
+
+  /* ---- toast ---- */
+  .toast { position:absolute; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px); background:rgba(15,23,42,.95); color:#fff; padding:11px 18px; border-radius:30px; font-size:12.5px; font-weight:700; opacity:0; transition:.3s; z-index:80; white-space:nowrap; box-shadow:0 8px 24px rgba(0,0,0,.3);}
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* ---- proto controls ---- */
+  .controls { margin-top:20px; display:flex; align-items:center; gap:16px; color:#CBD5E1; }
+  .controls button { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.15); color:#E2E8F0; width:44px; height:44px; border-radius:14px; font-size:18px; cursor:pointer; transition:.2s; display:flex; align-items:center; justify-content:center;}
+  .controls button:hover { background:rgba(52,211,153,.2); border-color:#34D399; color:#34D399;}
+  #screenName { font-size:13px; font-weight:700; min-width:130px; text-align:center; }
+  .dots { margin-top:14px; display:flex; gap:7px; }
+  .dots span { width:8px; height:8px; border-radius:50%; background:rgba(255,255,255,.2); transition:.25s; }
+  .dots span.on { background:#34D399; width:22px; border-radius:5px; }
+
+  /* ===== QR CONNECT ===== */
+  .qr-screen { height:100%; background:linear-gradient(180deg,#fff 0%,#F8FAFC 100%); overflow-y:auto; padding-bottom:24px;}
+  .qhead { padding:8px 16px 4px; display:flex; align-items:center; gap:12px;}
+  .qhead h3 { font-size:16px; font-weight:800;}
+  .qtitle { text-align:center; margin-top:14px; padding:0 24px;}
+  .qtitle h2 { font-size:19px; font-weight:800; line-height:1.3;}
+  .qtitle p { font-size:12.5px; color:#64748B; margin-top:6px;}
+  .qr-box { width:200px; height:200px; margin:20px auto 10px; background:#fff; border-radius:20px; padding:14px; box-shadow:0 8px 30px rgba(16,185,129,.18); border:1px solid #E2E8F0; position:relative;}
+  .qr-box .scanning { position:absolute; left:14px; right:14px; height:3px; background:linear-gradient(90deg,transparent,#10B981,transparent); border-radius:3px; animation:scan 2.2s ease-in-out infinite; box-shadow:0 0 10px #10B981;}
+  @keyframes scan { 0%,100%{top:14px;} 50%{top:178px;} }
+  .qr-grid { width:100%; height:100%; display:grid; grid-template-columns:repeat(25,1fr); grid-template-rows:repeat(25,1fr);}
+  .qr-grid i { background:#0F172A; }
+  .qr-grid i.w { background:transparent; }
+  .qr-status { text-align:center; font-size:12px; color:#10B981; font-weight:700; margin-top:2px; display:flex; align-items:center; justify-content:center; gap:7px;}
+  .spinner { width:14px; height:14px; border:2px solid #A7F3D0; border-top-color:#10B981; border-radius:50%; animation:spin 1s linear infinite; display:inline-block;}
+  @keyframes spin { to { transform:rotate(360deg);} }
+  .steps { margin:18px 16px; background:#fff; border-radius:16px; padding:6px 0; border:1px solid #F1F5F9;}
+  .steps .stp { display:flex; gap:12px; padding:12px 16px; align-items:center;}
+  .steps .stp .n { width:24px; height:24px; border-radius:50%; background:#ECFDF5; color:#059669; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .steps .stp .tx { font-size:12.5px; color:#334155; font-weight:600;}
+  .qr-connect-btn { margin:14px 16px; text-align:center; padding:14px; border-radius:14px; background:linear-gradient(135deg,#10B981,#059669); color:#fff; font-weight:800; font-size:14px; cursor:pointer;}
+
+  /* ===== CRM / CONTACTS ===== */
+  .crm { height:100%; background:#fff;}
+  .crm-head { background:#10B981; color:#fff; padding:14px 18px 18px;}
+  .crm-head .ct { display:flex; align-items:center; justify-content:space-between;}
+  .crm-head h3 { font-size:20px; font-weight:800;}
+  .crm-add { background:rgba(255,255,255,.22); width:34px;height:34px;border-radius:10px; display:flex;align-items:center;justify-content:center; font-size:18px; cursor:pointer;}
+  .crm-search { margin-top:12px; background:rgba(255,255,255,.22); border-radius:12px; padding:10px 14px; font-size:13px;}
+  .seg-chips { display:flex; gap:8px; padding:12px 18px; overflow-x:auto;}
+  .seg-chip { font-size:12px; font-weight:700; padding:7px 13px; border-radius:20px; background:#F1F5F9; color:#64748B; white-space:nowrap; cursor:pointer;}
+  .seg-chip.active { background:#10B981; color:#fff;}
+  .contact-row { display:flex; gap:12px; padding:12px 18px; border-bottom:1px solid #F8FAFC; align-items:center; cursor:pointer;}
+  .contact-row .av { width:44px;height:44px;border-radius:50%; color:#fff; display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px; flex-shrink:0;}
+  .contact-row .ci { flex:1; min-width:0;}
+  .contact-row .ci .nm { font-size:13.5px; font-weight:700;}
+  .contact-row .ci .ph { font-size:11.5px; color:#94A3B8; margin-top:2px;}
+  .chev-r { color:#CBD5E1; font-size:16px;}
+  .tag { font-size:9px; font-weight:700; padding:2px 6px; border-radius:5px; margin-left:6px;}
+  .tag.vip { background:#FEF3C7; color:#B45309;}
+  .tag.client { background:#DBEAFE; color:#1D4ED8;}
+  .tag.prospect { background:#E9D5FF; color:#7E22CE;}
+
+  /* ===== CONTACT DETAIL ===== */
+  .cdetail { height:100%; background:#F8FAFC; overflow-y:auto; padding-bottom:24px;}
+  .cd-head { background:#10B981; color:#fff; padding:8px 14px 28px; text-align:center;}
+  .cd-head .tb { display:flex; align-items:center; padding-bottom:8px;}
+  .cd-head .tb .back { color:#fff; }
+  .big-av { width:80px;height:80px;border-radius:28px; background:rgba(255,255,255,.25); margin:2px auto 10px; display:flex;align-items:center;justify-content:center; font-size:30px; font-weight:800;}
+  .cd-head .nm { font-size:19px; font-weight:800;}
+  .cd-head .ph { font-size:12px; opacity:.92; margin-top:3px;}
+  .cd-tags { display:flex; gap:6px; justify-content:center; margin-top:10px;}
+  .cd-actions { display:flex; gap:10px; margin:-18px 16px 0; position:relative; z-index:2;}
+  .cd-act { flex:1; background:#fff; border-radius:14px; padding:13px 6px; text-align:center; box-shadow:0 4px 14px rgba(0,0,0,.06); cursor:pointer;}
+  .cd-act .i { font-size:18px;}
+  .cd-act .l { font-size:11px; font-weight:700; color:#334155; margin-top:4px;}
+  .cd-info { margin:16px; background:#fff; border-radius:16px; padding:2px 0; border:1px solid #F1F5F9;}
+  .cd-row { display:flex; justify-content:space-between; align-items:center; padding:13px 16px; border-bottom:1px solid #F8FAFC; font-size:13px;}
+  .cd-row:last-child { border:none;}
+  .cd-row .k { color:#64748B;}
+  .cd-row .v { font-weight:700; color:#0F172A;}
+
+  /* ===== ANALYTICS ===== */
+  .analytics { height:100%; background:#F8FAFC; overflow-y:auto; padding-bottom:24px;}
+  .period { display:flex; gap:8px; padding:6px 18px 2px;}
+  .period span { font-size:11px; font-weight:700; padding:7px 13px; border-radius:20px; background:#fff; color:#64748B; border:1px solid #F1F5F9; cursor:pointer;}
+  .period span.active { background:#10B981; color:#fff; border-color:#10B981;}
+  .big-stat { margin:12px 18px; background:linear-gradient(135deg,#10B981,#059669); border-radius:18px; padding:18px; color:#fff;}
+  .big-stat .lbl { font-size:12px; opacity:.92; font-weight:600;}
+  .big-stat .val { font-size:34px; font-weight:800; margin-top:4px;}
+  .big-stat .sub { font-size:11px; opacity:.9; margin-top:4px;}
+  .chart-card { margin:0 18px 14px; background:#fff; border-radius:16px; padding:16px; border:1px solid #F1F5F9;}
+  .chart-card .ch { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;}
+  .chart-card .ch h4 { font-size:14px; font-weight:800;}
+  .chart-card .ch small { font-size:11px; color:#10B981; font-weight:700;}
+  .bars { display:flex; align-items:flex-end; justify-content:space-between; height:120px; gap:8px;}
+  .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end;}
+  .bar-col .bar { width:100%; background:linear-gradient(180deg,#34D399,#10B981); border-radius:6px 6px 0 0;}
+  .bar-col .dl { font-size:10px; color:#94A3B8; font-weight:700;}
+  .hbar-row { display:flex; align-items:center; gap:10px; margin-bottom:13px;}
+  .hbar-row .hn { font-size:12px; font-weight:700; width:96px; color:#334155;}
+  .hbar-track { flex:1; height:9px; background:#F1F5F9; border-radius:5px; overflow:hidden;}
+  .hbar-fill { height:100%; background:linear-gradient(90deg,#10B981,#34D399); border-radius:5px;}
+  .hbar-row .hv { font-size:11px; font-weight:700; color:#64748B; width:36px; text-align:right;}
+
+  /* ===== SETTINGS ===== */
+  .settings { height:100%; background:#F8FAFC; overflow-y:auto; padding-bottom:24px;}
+  .set-profile { background:linear-gradient(135deg,#10B981,#059669); color:#fff; padding:20px 18px; display:flex; align-items:center; gap:14px;}
+  .set-profile .av { width:58px;height:58px;border-radius:18px; background:rgba(255,255,255,.25); display:flex;align-items:center;justify-content:center;font-size:23px;font-weight:800;}
+  .set-profile .pn { font-size:16px; font-weight:800;}
+  .set-profile .pp { font-size:12px; opacity:.92; margin-top:2px;}
+  .badge-plan { background:rgba(255,255,255,.25); font-size:10px; font-weight:800; padding:3px 9px; border-radius:8px; margin-top:6px; display:inline-block;}
+  .set-section { margin:14px 16px 0; background:#fff; border-radius:16px; border:1px solid #F1F5F9; overflow:hidden;}
+  .set-row { display:flex; align-items:center; gap:13px; padding:14px 16px; border-bottom:1px solid #F8FAFC; cursor:pointer;}
+  .set-row:last-child { border:none;}
+  .set-row .si { width:32px;height:32px;border-radius:10px; display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .set-row .sl { flex:1; font-size:13.5px; font-weight:600; color:#0F172A;}
+  .set-row .val { font-size:11px; color:#94A3B8; font-weight:700;}
+  .set-row .chev, .chev-r { color:#CBD5E1; font-size:16px;}
+  .set-logout { margin:20px 16px; text-align:center; padding:14px; background:#fff; border-radius:14px; border:1px solid #FECACA; color:#EF4444; font-weight:800; font-size:14px; cursor:pointer;}
+  .set-foot { text-align:center; font-size:11px; color:#94A3B8; margin:6px 0 4px;}
+</style>
+</head>
+<body>
+
+<div class="hint-banner">👆 <b>Prototype interactif</b> — touchez les éléments <b>entourés</b> pour naviguer &nbsp;·&nbsp; <button id="toggleHints">masquer les repères</button></div>
+
+<div class="phone">
+  <div class="notch"></div>
+  <div class="phone-screen" id="stage">
+
+    <!-- ========== ONBOARDING ========== -->
+    <div class="screen active" id="onboarding">
+      <div class="onboard">
+        <div class="statusbar" style="color:#fff"><span>9:41</span><div class="icons" style="color:#fff"><span>●●●</span><span>📶</span><div class="bat" style="border-color:#fff"><i style="background:#fff"></i></div></div></div>
+        <div class="logo-circle">💬</div>
+        <h2>Gérez tout votre WhatsApp, automatiquement.</h2>
+        <p>Réponses auto, campagnes, programmation et chatbot IA — dans une seule application.</p>
+        <div class="feat">
+          <div><div class="check">✓</div> Réponses automatiques intelligentes</div>
+          <div><div class="check">✓</div> Campagnes multi-contacts opt-in</div>
+          <div><div class="check">✓</div> Programmation de messages</div>
+        </div>
+        <div class="cta tap" data-go="whatsapp-connect">Connecter mon WhatsApp →</div>
+        <div class="signin">Déjà un compte ? <b style="text-decoration:underline">Se connecter</b></div>
+      </div>
+    </div>
+
+    <!-- ========== DASHBOARD ========== -->
+    <div class="screen" id="dashboard">
+      <div class="dash">
+        <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+        <div class="appbar">
+          <div class="greet"><small>Bonjour 👋</small><h3>Tableau de bord</h3></div>
+          <div class="icon-btn">🔔</div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card"><div class="si" style="background:#ECFDF5">💬</div><div class="sv">1 284</div><div class="sl">Messages (7j)</div><div class="delta">▲ 12%</div></div>
+          <div class="stat-card"><div class="si" style="background:#EFF6FF">👥</div><div class="sv">856</div><div class="sl">Contacts</div><div class="delta">▲ 8%</div></div>
+          <div class="stat-card"><div class="si" style="background:#F5F3FF">📨</div><div class="sv">24</div><div class="sl">Campagnes</div><div class="delta">▲ 5%</div></div>
+          <div class="stat-card"><div class="si" style="background:#FFF7ED">🤖</div><div class="sv">92%</div><div class="sl">Bot actif</div><div class="delta">▲ taux</div></div>
+        </div>
+        <div class="section-h"><h4>Actions rapides</h4></div>
+        <div class="quick-actions">
+          <div class="qa tap" data-go="campaign"><div class="qi" style="background:#ECFDF5">📤</div><div class="qt">Broadcast</div></div>
+          <div class="qa tap" data-go="scheduler"><div class="qi" style="background:#EFF6FF">⏰</div><div class="qt">Programmer</div></div>
+          <div class="qa tap" data-go="chatbot"><div class="qi" style="background:#F5F3FF">🤖</div><div class="qt">Chatbot</div></div>
+          <div class="qa tap" data-go="analytics"><div class="qi" style="background:#E0F2FE">📊</div><div class="qt">Stats</div></div>
+          <div class="qa tap" data-go="pricing"><div class="qi" style="background:#FFF7ED">⭐</div><div class="qt">Premium</div></div>
+        </div>
+        <div class="promo tap" data-go="pricing"><span class="ic">⭐</span><div><div class="t">Passez Pro</div><div class="s">Débloquez le chatbot IA & 1 000 contacts</div></div></div>
+        <div class="section-h"><h4>Conversations récentes</h4><a class="tap" data-go="inbox">Boîte</a></div>
+        <div style="padding:0 18px; display:flex; flex-direction:column; gap:10px;">
+          <div class="rcard tap" data-go="chat"><div class="av" style="background:#3B82F6;">SK</div><div style="flex:1;"><div class="nm">Sara Klein</div><div class="mg">Merci pour la confirmation !</div></div><div style="font-size:10px;color:#94A3B8;">2m</div></div>
+          <div class="rcard tap" data-go="chat"><div class="av" style="background:#F59E0B;">AB</div><div style="flex:1;"><div class="nm">Ahmed B. <span class="bot-tag">BOT</span></div><div class="mg">Répondu automatiquement</div></div><div style="font-size:10px;color:#94A3B8;">8m</div></div>
+        </div>
+      </div>
+      <div class="bottom-nav" data-host="dashboard"></div>
+    </div>
+
+    <!-- ========== INBOX ========== -->
+    <div class="screen" id="inbox">
+      <div class="inbox">
+        <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+        <div class="inbox-head">
+          <h3>Boîte de réception</h3>
+          <div class="search">🔍 Rechercher une conversation…</div>
+        </div>
+        <div class="tabs"><div class="tab active">Toutes</div><div class="tab">Non lues <span style="background:#10B981;color:#fff;border-radius:8px;padding:0 5px;font-size:9px;margin-left:3px;">7</span></div><div class="tab">Bot</div></div>
+        <div class="conv tap" data-go="chat"><div class="av" style="background:#3B82F6;">SK</div><div class="ci"><div class="top"><span class="nm">Sara Klein</span><span class="tm">14:32</span></div><div class="msg">Bonjour, ma commande est-elle prête ?</div></div><div class="badge">2</div></div>
+        <div class="conv tap" data-go="chat"><div class="av" style="background:#F59E0B;">AB</div><div class="ci"><div class="top"><span class="nm">Ahmed Benali <span class="bot-tag">BOT</span></span><span class="tm">14:20</span></div><div class="msg">🤖 Répondu automatiquement</div></div></div>
+        <div class="conv tap" data-go="chat"><div class="av" style="background:#EF4444;">ME</div><div class="ci"><div class="top"><span class="nm">Marie Evrard</span><span class="tm">13:55</span></div><div class="msg">Merci ! Je recommande 👌</div></div></div>
+        <div class="conv tap" data-go="chat"><div class="av" style="background:#8B5CF6;">YL</div><div class="ci"><div class="top"><span class="nm">Youssef Lahlou</span><span class="tm">13:40</span></div><div class="msg">Vous acceptez le paiement à la livraison ?</div></div><div class="badge">1</div></div>
+        <div class="conv tap" data-go="chat"><div class="av" style="background:#10B981;">CK</div><div class="ci"><div class="top"><span class="nm">Clinique Dental</span><span class="tm">12:10</span></div><div class="msg">Rappel RDV demain 10h ✓</div></div></div>
+      </div>
+      <div class="bottom-nav" data-host="inbox"></div>
+    </div>
+
+    <!-- ========== CHAT ========== -->
+    <div class="screen" id="chat">
+      <div class="chat">
+        <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+        <div class="chat-head">
+          <span class="back tap" data-go="inbox">‹</span>
+          <div class="av">SK</div>
+          <div><div class="nm">Sara Klein</div><div class="st">En ligne</div></div>
+          <span style="margin-left:auto;font-size:16px;">📞</span><span style="font-size:16px;">⋮</span>
+        </div>
+        <div class="chat-body" id="chatBody">
+          <div class="bubble in">Bonjour 👋 J'ai vu votre post sur le sac à main.</div>
+          <div class="bubble in">Est-il encore disponible ?</div>
+          <div class="bubble bot"><div class="bot-flag">🤖 Réponse automatique (Bot)</div>Bonjour Sara ! Oui, il est disponible 😊 Souhaitez-vous le commander ?</div>
+          <div class="bubble in">Super ! Combien et comment je paie ?</div>
+          <div class="bubble out">Il est à 349 DH 💳 Paiement par carte ou à la livraison. Je vous envoie le lien ?<div class="t">✓✓ 14:31</div></div>
+        </div>
+        <div class="chat-input">
+          <span class="txt">Écrire un message…</span>
+          <span style="font-size:18px;color:#94A3B8;">😊</span>
+          <span style="font-size:18px;color:#94A3B8;">📎</span>
+          <div class="send tap" id="sendBtn">➤</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== CAMPAIGN ========== -->
+    <div class="screen" id="campaign">
+      <div class="broadcast">
+        <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+        <div class="bc-head"><span class="back tap" data-go="scheduler">‹</span><h3>Nouvelle campagne</h3><span style="font-size:16px;">💾</span></div>
+        <div class="seg-box">
+          <label>👥 Audience (opt-in)</label>
+          <div class="aud"><span class="big">🎯</span><div><div class="lbl">Clients fidèles</div><div class="cnt">412 contacts</div></div></div>
+          <div class="chips"><span class="chip">Casablanca</span><span class="chip">+1 achat</span><span class="chip">VIP</span></div>
+        </div>
+        <div class="compose">
+          <div class="ph">Bonjour {prénom} 👋<br><br>Solde exclusif -30% ce week-end seulement !<br><br>Tapez SOLDE pour recevoir votre code 🎁</div>
+          <div class="tools">📎 😊 🖼️ 🎟️ {variable}</div>
+        </div>
+        <div class="bc-actions">
+          <div class="btn-ghost tap" id="schedBtn">⏰ Programmer</div>
+          <div class="btn-primary tap" id="sendCampBtn">🚀 Envoyer à 412</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SCHEDULER ========== -->
+    <div class="screen" id="scheduler">
+      <div class="sched">
+        <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+        <div class="appbar"><div class="greet"><small>Mercredi 29 juillet</small><h3>Programmation</h3></div><div class="icon-btn">📅</div></div>
+        <div class="list">
+          <div class="sched-item"><div class="time"><div class="h">09:00</div><div class="ap">MATIN</div></div><div class="bar"></div><div class="info"><div class="ttl">Promotion du jour</div><div class="meta">Campagne · 412 contacts · Quotidien</div></div><div class="toggle tap"></div></div>
+          <div class="sched-item purple"><div class="time"><div class="h">12:30</div><div class="ap">MIDI</div></div><div class="bar"></div><div class="info"><div class="ttl">Rappel de rendez-vous</div><div class="meta">Clinique · Auto · Lun-Ven</div></div><div class="toggle tap"></div></div>
+          <div class="sched-item orange"><div class="time"><div class="h">18:00</div><div class="ap">SOIR</div></div><div class="bar"></div><div class="info"><div class="ttl">Statut du soir 📸</div><div class="meta">Photo produit · Une fois</div></div><div class="toggle off tap"></div></div>
+          <div class="sched-item"><div class="time"><div class="h">20:00</div><div class="ap">SOIR</div></div><div class="bar"></div><div class="info"><div class="ttl">Message d'anniversaire 🎂</div><div class="meta">Séquence · 3 contacts</div></div><div class="toggle tap"></div></div>
+        </div>
+        <div class="fab tap" data-go="campaign">＋</div>
+      </div>
+      <div class="bottom-nav" data-host="scheduler"></div>
+    </div>
+
+    <!-- ========== CHATBOT ========== -->
+    <div class="screen" id="chatbot">
+      <div class="bot-conf">
+        <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+        <div class="appbar"><span class="back tap" data-go="dashboard">‹</span><div class="greet" style="margin-left:8px;"><h3>Assistant IA</h3></div></div>
+        <div class="bot-card">
+          <div class="ai-ic">🤖</div>
+          <div style="flex:1;"><div class="tt">Réponse IA automatique</div><div class="ds">GPT-4 répond à vos clients 24/7</div></div>
+          <div class="toggle tap"></div>
+        </div>
+        <div style="padding:0 16px;"><div style="font-size:11px;font-weight:800;color:#64748B;text-transform:uppercase;">Règles personnalisées</div></div>
+        <div class="rule" style="margin-top:8px;">
+          <div class="rh"><span class="lbl">Règle 1</span><span style="font-size:12px;color:#10B981;font-weight:700;">Active</span></div>
+          <span class="kw">« prix » · « combien »</span>
+          <div class="arr">↓</div>
+          <div class="resp">Répond avec le catalogue produits + lien de paiement 💳</div>
+        </div>
+        <div class="rule">
+          <div class="rh"><span class="lbl">Règle 2</span><span style="font-size:12px;color:#10B981;font-weight:700;">Active</span></div>
+          <span class="kw">« horaires » · « ouvert »</span>
+          <div class="arr">↓</div>
+          <div class="resp">Nous sommes ouverts de 9h à 19h, lun-sam 🕘</div>
+        </div>
+        <div class="add-rule tap" id="addRuleBtn">＋ Ajouter une règle</div>
+      </div>
+    </div>
+
+    <!-- ========== PRICING ========== -->
+    <div class="screen" id="pricing">
+      <div class="pricing">
+        <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+        <div class="appbar"><span class="back tap" data-go="dashboard">‹</span><div class="greet" style="margin-left:8px;"><h3>Passer Premium</h3></div></div>
+        <div class="ph"><h3>Choisissez votre plan</h3><p>Annulez à tout moment · Sans engagement</p></div>
+        <div class="plan">
+          <div class="pn">🆓 Free</div>
+          <div class="pp">0 DH<small> /mois</small></div>
+          <ul><li>1 numéro WhatsApp</li><li>100 contacts</li><li>50 msg programmés</li><li>Réponses simples</li></ul>
+          <div class="cbtn tap" data-toast="Vous êtes déjà sur le plan Free ✅">Plan actuel</div>
+        </div>
+        <div class="plan pop">
+          <div class="ribbon">⭐ POPULAIRE</div>
+          <div class="pn">Pro</div>
+          <div class="pp">290 DH<small> /mois</small></div>
+          <ul><li>Chatbot IA (GPT-4)</li><li>1 000 contacts opt-in</li><li>Campagnes illimitées</li><li>3 agents</li><li>Séquences auto</li></ul>
+          <div class="cbtn tap" data-toast="Redirection vers le paiement… 💳" data-go="dashboard">Choisir Pro →</div>
+        </div>
+        <div class="plan">
+          <div class="pn">🏢 Business</div>
+          <div class="pp">890 DH<small> /mois</small></div>
+          <ul><li>10 000 contacts opt-in</li><li>Multi-numéros</li><li>Agents illimités</li><li>Marque blanche + API</li></ul>
+          <div class="cbtn tap" data-toast="Redirection vers le paiement… 💳" data-go="dashboard">Choisir Business</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== WHATSAPP CONNECT (QR) ========== -->
+    <div class="screen" id="whatsapp-connect">
+      <div class="qr-screen">
+        <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+        <div class="qhead"><span class="back tap" data-go="onboarding">‹</span><h3>Connexion</h3></div>
+        <div class="qtitle"><h2>Connectez votre<br>WhatsApp Business</h2><p>Scannez ce code avec votre téléphone</p></div>
+        <div class="qr-box">
+          <div class="qr-grid" id="qrGrid"></div>
+          <div class="scanning"></div>
+        </div>
+        <div class="qr-status"><span class="spinner"></span> En attente de connexion…</div>
+        <div class="steps">
+          <div class="stp"><div class="n">1</div><div class="tx">Ouvrez WhatsApp sur votre téléphone</div></div>
+          <div class="stp"><div class="n">2</div><div class="tx">Paramètres › Appareils liés</div></div>
+          <div class="stp"><div class="n">3</div><div class="tx">Scannez ce code QR</div></div>
+        </div>
+        <div class="qr-connect-btn tap" id="qrConnectBtn">✅ Simuler la connexion</div>
+      </div>
+    </div>
+
+    <!-- ========== CONTACTS / CRM ========== -->
+    <div class="screen" id="contacts">
+      <div class="crm">
+        <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+        <div class="crm-head">
+          <div class="ct"><h3>Contacts</h3><div class="crm-add tap" data-toast="Nouveau contact ➕">＋</div></div>
+          <div class="crm-search">🔍 Rechercher un contact…</div>
+        </div>
+        <div class="seg-chips">
+          <div class="seg-chip active">Tous · 856</div>
+          <div class="seg-chip">VIP</div>
+          <div class="seg-chip">Clients</div>
+          <div class="seg-chip">Prospects</div>
+        </div>
+        <div class="contact-row tap" data-go="contact-detail"><div class="av" style="background:#3B82F6;">SK</div><div class="ci"><div class="nm">Sara Klein<span class="tag vip">VIP</span></div><div class="ph">+212 6 12 34 56 78</div></div><span class="chev-r">›</span></div>
+        <div class="contact-row tap" data-go="contact-detail"><div class="av" style="background:#F59E0B;">AB</div><div class="ci"><div class="nm">Ahmed Benali<span class="tag client">Client</span></div><div class="ph">+212 6 66 11 22 33</div></div><span class="chev-r">›</span></div>
+        <div class="contact-row tap" data-go="contact-detail"><div class="av" style="background:#EF4444;">ME</div><div class="ci"><div class="nm">Marie Evrard<span class="tag client">Client</span></div><div class="ph">+33 6 78 90 12 34</div></div><span class="chev-r">›</span></div>
+        <div class="contact-row tap" data-go="contact-detail"><div class="av" style="background:#8B5CF6;">YL</div><div class="ci"><div class="nm">Youssef Lahlou<span class="tag prospect">Prospect</span></div><div class="ph">+212 5 22 44 55 66</div></div><span class="chev-r">›</span></div>
+        <div class="contact-row tap" data-go="contact-detail"><div class="av" style="background:#10B981;">FT</div><div class="ci"><div class="nm">Fatima Tahiri<span class="tag vip">VIP</span></div><div class="ph">+212 6 55 99 88 77</div></div><span class="chev-r">›</span></div>
+        <div class="contact-row tap" data-go="contact-detail"><div class="av" style="background:#0EA5E9;">KD</div><div class="ci"><div class="nm">Karim Drissi<span class="tag prospect">Prospect</span></div><div class="ph">+212 6 14 25 36 47</div></div><span class="chev-r">›</span></div>
+      </div>
+      <div class="bottom-nav" data-host="contacts"></div>
+    </div>
+
+    <!-- ========== CONTACT DETAIL ========== -->
+    <div class="screen" id="contact-detail">
+      <div class="cdetail">
+        <div class="cd-head">
+          <div class="tb"><span class="back tap" data-go="contacts">‹</span></div>
+          <div class="big-av">SK</div>
+          <div class="nm">Sara Klein</div>
+          <div class="ph">+212 6 12 34 56 78</div>
+          <div class="cd-tags"><span class="tag vip">VIP</span><span class="tag client">Client</span></div>
+        </div>
+        <div class="cd-actions">
+          <div class="cd-act tap" data-go="chat"><div class="i">💬</div><div class="l">Message</div></div>
+          <div class="cd-act tap" data-go="campaign"><div class="i">📤</div><div class="l">Campagne</div></div>
+          <div class="cd-act tap" data-toast="Appel WhatsApp 📞"><div class="i">📞</div><div class="l">Appeler</div></div>
+        </div>
+        <div class="cd-info">
+          <div class="cd-row"><span class="k">Source</span><span class="v">Formulaire web</span></div>
+          <div class="cd-row"><span class="k">Inscrit le</span><span class="v">12 juin 2026</span></div>
+          <div class="cd-row"><span class="k">Dernier message</span><span class="v">Il y a 2 min</span></div>
+          <div class="cd-row"><span class="k">Commandes</span><span class="v">7 · 2 443 DH</span></div>
+          <div class="cd-row"><span class="k">Ville</span><span class="v">Casablanca</span></div>
+        </div>
+        <div class="cd-info">
+          <div class="cd-row tap" data-toast="Étiquette modifiée 🏷️"><span class="k">Étiquettes</span><span class="v">Modifier ›</span></div>
+          <div class="cd-row tap" data-toast="Séquence activée ⚡"><span class="k">Séquence auto</span><span class="v">Configurer ›</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== ANALYTICS ========== -->
+    <div class="screen" id="analytics">
+      <div class="analytics">
+        <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+        <div class="appbar"><span class="back tap" data-go="dashboard">‹</span><div class="greet" style="margin-left:8px;"><h3>Statistiques</h3></div></div>
+        <div class="period"><span class="active">7 jours</span><span>30 jours</span><span>3 mois</span></div>
+        <div class="big-stat"><div class="lbl">Messages échangés</div><div class="val">1 284</div><div class="sub">▲ 12% vs période précédente</div></div>
+        <div class="chart-card">
+          <div class="ch"><h4>Activité quotidienne</h4><small>▲ 12%</small></div>
+          <div class="bars">
+            <div class="bar-col"><div class="bar" style="height:42%"></div><div class="dl">L</div></div>
+            <div class="bar-col"><div class="bar" style="height:65%"></div><div class="dl">M</div></div>
+            <div class="bar-col"><div class="bar" style="height:55%"></div><div class="dl">M</div></div>
+            <div class="bar-col"><div class="bar" style="height:80%"></div><div class="dl">J</div></div>
+            <div class="bar-col"><div class="bar" style="height:72%"></div><div class="dl">V</div></div>
+            <div class="bar-col"><div class="bar" style="height:95%"></div><div class="dl">S</div></div>
+            <div class="bar-col"><div class="bar" style="height:60%"></div><div class="dl">D</div></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="ch"><h4>Performance des campagnes</h4></div>
+          <div class="hbar-row"><div class="hn">Solde -30%</div><div class="hbar-track"><div class="hbar-fill" style="width:88%"></div></div><div class="hv">88%</div></div>
+          <div class="hbar-row"><div class="hn">Nouveau coll.</div><div class="hbar-track"><div class="hbar-fill" style="width:64%"></div></div><div class="hv">64%</div></div>
+          <div class="hbar-row"><div class="hn">Black Friday</div><div class="hbar-track"><div class="hbar-fill" style="width:93%"></div></div><div class="hv">93%</div></div>
+          <div class="hbar-row" style="margin-bottom:0;"><div class="hn">Rappel RDV</div><div class="hbar-track"><div class="hbar-fill" style="width:76%"></div></div><div class="hv">76%</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SETTINGS ========== -->
+    <div class="screen" id="settings">
+      <div class="settings">
+        <div class="statusbar"><span>9:41</span><div class="icons"><span>●●●</span><span>📶</span><div class="bat"><i></i></div></div></div>
+        <div class="set-profile">
+          <div class="av">MB</div>
+          <div><div class="pn">Mon Business</div><div class="pp">+212 5XX XX XX XX</div><div class="badge-plan">Plan Free</div></div>
+        </div>
+        <div class="set-section">
+          <div class="set-row tap" data-go="pricing"><div class="si" style="background:#FFF7ED">⭐</div><div class="sl">Abonnement & facturation</div><div class="val">Free</div><div class="chev">›</div></div>
+          <div class="set-row tap" data-toast="Profil & entreprise (démo)"><div class="si" style="background:#EFF6FF">👤</div><div class="sl">Profil & entreprise</div><div class="chev">›</div></div>
+          <div class="set-row tap" data-go="whatsapp-connect"><div class="si" style="background:#ECFDF5">📱</div><div class="sl">Numéro WhatsApp lié</div><div class="val">Connecté</div><div class="chev">›</div></div>
+        </div>
+        <div class="set-section">
+          <div class="set-row tap" data-toast="Notifications (démo)"><div class="si" style="background:#FEF3C7">🔔</div><div class="sl">Notifications</div><div class="chev">›</div></div>
+          <div class="set-row tap" data-toast="Sécurité & confidentialité (démo)"><div class="si" style="background:#FEE2E2">🔒</div><div class="sl">Sécurité & confidentialité</div><div class="chev">›</div></div>
+          <div class="set-row tap" data-toast="Intégrations & API (démo)"><div class="si" style="background:#F5F3FF">🔌</div><div class="sl">Intégrations & API</div><div class="chev">›</div></div>
+        </div>
+        <div class="set-section">
+          <div class="set-row tap" data-toast="Aide & support (démo)"><div class="si" style="background:#E0F2FE">❓</div><div class="sl">Aide & support</div><div class="chev">›</div></div>
+          <div class="set-row tap" data-toast="WaFlow v1.0 — prototype"><div class="si" style="background:#F1F5F9">ℹ️</div><div class="sl">À propos</div><div class="chev">›</div></div>
+        </div>
+        <div class="set-logout tap" id="logoutBtn">🚪 Se déconnecter</div>
+        <div class="set-foot">WaFlow v1.0 · © 2026</div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+
+<div class="controls">
+  <button id="backBtn" title="Retour">←</button>
+  <span id="screenName">Bienvenue</span>
+  <button id="homeBtn" title="Accueil">🏠</button>
+</div>
+<div class="dots" id="dots"></div>
+
+<script>
+const order = ['onboarding','whatsapp-connect','dashboard','inbox','chat','contacts','contact-detail','analytics','campaign','scheduler','chatbot','settings','pricing'];
+const labels = { onboarding:'Bienvenue', 'whatsapp-connect':'Connexion WhatsApp', dashboard:'Tableau de bord', inbox:'Boîte de réception', chat:'Conversation', contacts:'Contacts', 'contact-detail':'Fiche contact', analytics:'Statistiques', campaign:'Nouvelle campagne', scheduler:'Programmation', chatbot:'Assistant IA', settings:'Réglages', pricing:'Abonnements' };
+
+let history = ['onboarding'];
+
+// build bottom nav
+function buildNav(host){
+  const nav = document.querySelector(`.bottom-nav[data-host="${host}"]`);
+  if(!nav) return;
+  nav.innerHTML = '';
+  const items = [
+    {ic:'🏠', t:'Accueil', go:'dashboard'},
+    {ic:'💬', t:'Inbox', go:'inbox'},
+    {ic:'📤', t:'Campagnes', go:'scheduler'},
+    {ic:'👥', t:'Contacts', go:'contacts'},
+    {ic:'⚙️', t:'Réglages', go:'settings'}
+  ];
+  items.forEach(it=>{
+    const b = document.createElement('button');
+    b.className = 'nav-item' + (it.go===host?' active':'') + ' tap';
+    b.innerHTML = `<span class="ic">${it.ic}</span>${it.t}`;
+    b.onclick = ()=> go(it.go);
+    nav.appendChild(b);
+  });
+}
+['dashboard','inbox','scheduler','contacts','settings'].forEach(buildNav);
+
+// dots
+const dotsEl = document.getElementById('dots');
+order.forEach(()=>{ const s=document.createElement('span'); dotsEl.appendChild(s); });
+
+function go(id, push=true){
+  document.querySelectorAll('.screen').forEach(s=> s.classList.remove('active'));
+  const el = document.getElementById(id);
+  el.classList.add('active');
+  if(push) history.push(id);
+  if(history.length>20) history.shift();
+  document.getElementById('screenName').textContent = labels[id];
+  // dots
+  [...dotsEl.children].forEach((d,i)=> d.classList.toggle('on', order[i]===id));
+  el.scrollTop = 0;
+  window.scrollTo(0,0);
+}
+
+function back(){
+  if(history.length>1){ history.pop(); go(history[history.length-1], false); }
+}
+
+// delegated clicks
+document.getElementById('stage').addEventListener('click', e=>{
+  const t = e.target.closest('[data-go]');
+  if(t){ go(t.dataset.go); return; }
+  const tc = e.target.closest('[data-toast]');
+  if(tc){ showToast(tc.dataset.toast); return; }
+
+  // toggle switches
+  if(e.target.closest('.toggle')){
+    const tg = e.target.closest('.toggle');
+    tg.classList.toggle('off');
+    showToast(tg.classList.contains('off') ? 'Désactivé' : 'Activé ✅');
+  }
+
+  // send chat message
+  if(e.target.closest('#sendBtn')){
+    const body = document.getElementById('chatBody');
+    const m = document.createElement('div');
+    m.className='bubble out'; m.innerHTML='Parfait, je vous prépare ça ! 👍<div class="t">✓✓ maintenant</div>';
+    body.appendChild(m); body.scrollTop = body.scrollHeight;
+    showToast('Message envoyé ✓');
+  }
+  // scheduler button -> go scheduler
+  if(e.target.closest('#schedBtn')) go('scheduler');
+  // send campaign
+  if(e.target.closest('#sendCampBtn')) showToast('🚀 Campagne envoyée à 412 contacts !');
+  // add rule
+  if(e.target.closest('#addRuleBtn')) showToast('Nouvelle règle (démo) 🤖');
+  // qr connect -> dashboard
+  if(e.target.closest('#qrConnectBtn')){ showToast('✅ WhatsApp connecté !'); setTimeout(()=>go('dashboard'), 750); }
+  // logout -> onboarding
+  if(e.target.closest('#logoutBtn')){ showToast('Déconnexion…'); setTimeout(()=>go('onboarding'), 750); }
+  // segment chips
+  const chip = e.target.closest('.seg-chip');
+  if(chip){ [...chip.parentElement.children].forEach(c=>c.classList.remove('active')); chip.classList.add('active'); return; }
+  // period selector
+  const per = e.target.closest('.period span');
+  if(per){ [...per.parentElement.children].forEach(c=>c.classList.remove('active')); per.classList.add('active'); return; }
+});
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(()=> t.classList.remove('show'), 1800);
+}
+
+document.getElementById('backBtn').onclick = back;
+document.getElementById('homeBtn').onclick = ()=> go('dashboard');
+
+// toggle hints
+const tb = document.getElementById('toggleHints');
+tb.onclick = ()=>{
+  document.body.classList.toggle('no-hints');
+  const off = document.body.classList.contains('no-hints');
+  tb.textContent = off ? 'afficher les repères' : 'masquer les repères';
+};
+
+// QR code generator (decorative)
+function buildQR(){
+  const g = document.getElementById('qrGrid');
+  if(!g || g.childElementCount) return;
+  const N = 25;
+  const cells = Array.from({length:N}, ()=>Array(N).fill(0));
+  const finder = (r0,c0)=>{
+    for(let r=0;r<7;r++) for(let c=0;c<7;c++){
+      const edge = r===0||r===6||c===0||c===6;
+      const core = r>=2&&r<=4&&c>=2&&c<=4;
+      cells[r0+r][c0+c] = (edge||core)?1:0;
+    }
+  };
+  finder(0,0); finder(0,N-7); finder(N-7,0);
+  let seed = 12345;
+  const rnd = ()=>{ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; };
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+    const inFinder = (r<8&&c<8)||(r<8&&c>=N-8)||(r>=N-8&&c<8);
+    if(inFinder) continue;
+    cells[r][c] = rnd()>0.52?1:0;
+  }
+  let html='';
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++) html += cells[r][c]?'<i></i>':'<i class="w"></i>';
+  g.innerHTML = html;
+}
+
+// init
+buildQR();
+go('onboarding', false);
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# Configuration Netlify — WaFlow (site statique : prototype + maquettes)
+[build]
+  publish = "."
+
+# L'index par défaut
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
